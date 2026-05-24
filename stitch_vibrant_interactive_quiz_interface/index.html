@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QuizVibe - Dynamic Quiz</title>
+
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&family=Montserrat:wght@100..900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "on-tertiary-fixed": "#251a00",
+            "on-tertiary-fixed-variant": "#5b4300",
+            "surface-container": "#ffe9e8",
+            tertiary: "#785a00",
+            "on-primary": "#ffffff",
+            "primary-fixed": "#ffdbd0",
+            "surface-container-lowest": "#ffffff",
+            "surface-container-highest": "#f3dedd",
+            "surface-container-high": "#f9e3e3",
+            "primary-container": "#ff6b35",
+            "surface-container-low": "#fff0f0",
+            "tertiary-container": "#bc942f",
+            "on-background": "#241919",
+            "on-primary-container": "#5f1900",
+            "on-surface": "#241919",
+            "on-surface-variant": "#594139",
+            primary: "#ab3500",
+            outline: "#8d7168",
+            surface: "#fff8f7",
+            background: "#fff8f7",
+            "on-tertiary": "#ffffff",
+            "tertiary-fixed": "#ffdf9b"
+          },
+          borderRadius: {
+            DEFAULT: "0.25rem",
+            lg: "0.5rem",
+            xl: "0.75rem",
+            full: "9999px"
+          },
+          spacing: {
+            "card-padding": "40px",
+            "card-padding-mobile": "24px"
+          },
+          fontFamily: {
+            quicksand: ["Quicksand", "sans-serif"]
+          },
+          fontSize: {
+            "headline-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.01em", fontWeight: "700" }],
+            "body-sm": ["14px", { lineHeight: "20px", fontWeight: "500" }],
+            "body-md": ["16px", { lineHeight: "24px", fontWeight: "500" }],
+            "display-lg": ["48px", { lineHeight: "1.2", letterSpacing: "-0.02em", fontWeight: "700" }]
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    .material-symbols-outlined {
+      font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+    }
+
+    .sunset-gradient {
+      background: linear-gradient(135deg, #ff6b35 0%, #bc942f 100%);
+    }
+
+    .vibrant-sunset {
+      background: linear-gradient(135deg, #ab3500 0%, #ff6b35 50%, #bc942f 100%);
+    }
+
+    .page-gradient {
+      background:
+        radial-gradient(circle at top left, #ffdbd0 0%, #fff8f7 40%),
+        radial-gradient(circle at bottom right, #ffdf9b 0%, #fff8f7 40%);
+    }
+
+    .floating-card {
+      box-shadow: 0 20px 50px rgba(171, 53, 0, 0.1);
+    }
+
+    .animated-blob {
+      filter: blur(80px);
+      opacity: 0.2;
+      z-index: -1;
+      animation: move 20s infinite alternate;
+    }
+
+    @keyframes move {
+      from { transform: translate(-10%, -10%); }
+      to { transform: translate(10%, 10%); }
+    }
+
+    .answer-card {
+      transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+    }
+
+    .answer-card:hover {
+      transform: translateY(-2px);
+    }
+
+    .celebration-sparkle {
+      position: fixed;
+      pointer-events: none;
+      animation: sparkle 1s ease-out forwards;
+      z-index: 100;
+    }
+
+    @keyframes sparkle {
+      0% { transform: scale(0) rotate(0deg); opacity: 1; }
+      100% { transform: scale(1.8) rotate(180deg); opacity: 0; }
+    }
+  </style>
+</head>
+
+<body class="bg-background text-on-background min-h-screen flex flex-col font-quicksand overflow-x-hidden page-gradient">
+
+  <div class="fixed top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
+    <div class="absolute -top-1/4 -left-1/4 w-1/2 h-1/2 bg-primary rounded-full animated-blob"></div>
+    <div class="absolute -bottom-1/4 -right-1/4 w-1/2 h-1/2 bg-tertiary-container rounded-full animated-blob" style="animation-delay: -5s;"></div>
+  </div>
+
+  <header class="w-full top-0 sticky bg-white/40 backdrop-blur-md z-50">
+    <div class="flex justify-between items-center max-w-[640px] mx-auto px-4 py-4">
+      <h1 class="text-headline-lg text-primary">QuizVibe</h1>
+      <button id="restartTopBtn" class="text-on-surface-variant hover:text-primary transition-colors text-body-sm uppercase tracking-wider">
+        Restart
+      </button>
+    </div>
+  </header>
+
+  <main class="flex-grow flex items-center justify-center px-4 py-12 md:py-24">
+    <section id="appCard" class="w-full max-w-[640px] bg-surface-container-lowest rounded-xl p-card-padding-mobile md:p-card-padding floating-card relative overflow-hidden transition-all duration-500">
+
+      <!-- START SCREEN -->
+      <div id="startScreen">
+        <div class="relative w-full aspect-[16/11] mb-8 rounded-lg overflow-hidden group">
+          <img
+            src="WhatsApp Image 2026-05-24 at 11.43.59.jpeg"
+            alt="Creative quiz cover"
+            class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+          />
+          <div class="absolute inset-0 bg-gradient-to-t from-on-surface/20 to-transparent"></div>
+        </div>
+
+        <div class="text-center space-y-6">
+          <div class="inline-flex items-center gap-2 px-4 py-1 bg-tertiary-fixed rounded-full text-on-tertiary-fixed-variant text-body-sm font-bold uppercase tracking-wide">
+            <span class="material-symbols-outlined text-[18px]">psychology</span>
+            <span id="quizMeta">5 Minute Exploration</span>
+          </div>
+
+          <h2 id="startTitle" class="text-headline-lg md:text-display-lg text-on-surface tracking-tight leading-tight">
+            Which Architectural Era Defines Your Personality?
+          </h2>
+
+          <p id="startDescription" class="text-body-md text-on-surface-variant max-w-lg mx-auto">
+            Uncover the historical blueprint of your soul.
+          </p>
+
+          <div class="pt-6">
+            <button id="startBtn" class="w-full md:w-auto px-12 py-5 vibrant-sunset text-white rounded-full font-bold text-lg shadow-lg shadow-primary/20 transition-all duration-300 hover:scale-105 active:scale-95 flex items-center justify-center gap-3 group mx-auto">
+              Start your journey
+              <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
+            </button>
+
+            <p class="mt-4 text-outline text-body-sm uppercase tracking-widest font-bold">
+              Join 12,400+ explorers
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- QUESTION SCREEN -->
+      <div id="questionScreen" class="hidden">
+        <div class="mb-8">
+          <div class="flex justify-between items-center mb-3">
+            <p id="questionCounter" class="text-body-sm text-outline font-bold uppercase tracking-widest">Question 1 / 3</p>
+            <p id="progressPercent" class="text-body-sm text-primary font-bold">33%</p>
+          </div>
+
+          <div class="h-3 w-full bg-surface-container-high rounded-full overflow-hidden">
+            <div id="progressBar" class="h-full vibrant-sunset rounded-full transition-all duration-500" style="width: 0%;"></div>
+          </div>
+        </div>
+
+        <div class="space-y-6">
+          <div class="inline-flex items-center gap-2 px-4 py-1 bg-tertiary-fixed rounded-full text-on-tertiary-fixed-variant text-body-sm font-bold uppercase tracking-wide">
+            <span class="material-symbols-outlined text-[18px]">quiz</span>
+            <span>Choose one answer</span>
+          </div>
+
+          <h2 id="questionText" class="text-headline-lg text-on-surface tracking-tight leading-tight">
+            Question text
+          </h2>
+
+          <div id="answersContainer" class="space-y-4"></div>
+
+          <div class="flex justify-between gap-4 pt-4">
+            <button id="backBtn" class="px-6 py-4 rounded-full font-bold text-primary border border-outline/30 hover:bg-surface-container-low transition-all">
+              Back
+            </button>
+
+            <button id="nextBtn" class="opacity-50 cursor-not-allowed group flex items-center gap-3 bg-primary text-on-primary px-8 py-4 rounded-full font-bold shadow-lg hover:shadow-xl active:scale-95 transition-all duration-300" disabled>
+              <span id="nextBtnText">Next Question</span>
+              <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RESULT SCREEN -->
+      <div id="resultScreen" class="hidden text-center">
+        <div class="mb-6 flex justify-center">
+          <div class="w-24 h-24 rounded-full vibrant-sunset flex items-center justify-center shadow-lg shadow-primary/20">
+            <span id="resultIcon" class="material-symbols-outlined text-white text-[48px]">emoji_objects</span>
+          </div>
+        </div>
+
+        <p class="text-body-sm text-outline font-bold uppercase tracking-widest mb-3">Your result is</p>
+
+        <h2 id="resultTitle" class="text-headline-lg md:text-display-lg text-on-surface tracking-tight leading-tight mb-4">
+          Renaissance Soul
+        </h2>
+
+        <p id="resultDescription" class="text-body-md text-on-surface-variant max-w-lg mx-auto mb-8">
+          Your result description.
+        </p>
+
+        <div class="rounded-xl bg-tertiary-fixed p-5 text-left mb-8">
+          <div class="flex gap-3">
+            <span class="material-symbols-outlined text-on-tertiary-fixed">tips_and_updates</span>
+            <div>
+              <h3 id="resultFactTitle" class="text-lg font-bold text-on-tertiary-fixed">Did you know?</h3>
+              <p id="resultFact" class="text-body-md text-on-tertiary-fixed-variant">
+                Add a fun fact here.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <button id="restartBtn" class="w-full md:w-auto px-12 py-5 vibrant-sunset text-white rounded-full font-bold text-lg shadow-lg shadow-primary/20 transition-all duration-300 hover:scale-105 active:scale-95">
+          Take quiz again
+        </button>
+      </div>
+
+      <div class="absolute -top-24 -right-24 w-48 h-48 sunset-gradient opacity-10 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -bottom-24 -left-24 w-48 h-48 bg-primary opacity-10 rounded-full blur-3xl pointer-events-none"></div>
+    </section>
+  </main>
+
+  <footer class="w-full mt-auto bg-transparent">
+    <div class="flex flex-col items-center gap-4 py-8 max-w-[640px] mx-auto">
+      <div class="flex gap-6">
+        <a class="text-outline hover:text-primary transition-colors text-body-sm" href="#">Privacy</a>
+        <a class="text-outline hover:text-primary transition-colors text-body-sm" href="#">Terms</a>
+        <a class="text-outline hover:text-primary transition-colors text-body-sm" href="#">Support</a>
+      </div>
+
+      <div class="text-body-sm text-outline">
+        © 2024 QuizVibe Playful Discovery
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    /*
+      OVO JE GLAVNI DEO KOJI TI MENJAŠ.
+
+      1) U questions dodaješ koliko god pitanja hoćeš.
+      2) Svaki odgovor ima key: "a", "b", "c"...
+      3) U comboResults pišeš tačnu kombinaciju odgovora i koji rezultat dobija.
+
+      Primer:
+      Ako korisnik izabere:
+      pitanje 1 = a
+      pitanje 2 = b
+      pitanje 3 = c
+
+      ključ je: "a-b-c"
+    */
+    const naslov = document.querySelector(".text-headline-lg.text-primary");
+    naslov.textContent = "Lanin Quiz";
+
+    const quizData = {
+
+      title: "Koja si Lana?",
+      description: "Uncover the historical blueprint of your soul. From Renaissance details to Brutalist minimalism, find the era that matches your vibe.",
+      meta: "5 Minute Exploration",
+
+      questions: [
+        {
+          text: " Šta jedeš za doručak?",
+          answers: [
+            { key: "a", text: "Ovsena kaša" },
+            { key: "b", text: "Kafa" },
+            { key: "c", text: "Jaja " },
+            { key: "d", text: "Ne doruckujem" }
+          ]
+        },
+        {
+          text: "Kako ustaješ ujutru?",
+          answers: [
+            { key: "a", text: "Prvi alarm, lagano" },
+            { key: "b", text: "Posle 5 alarma" },
+            { key: "c", text: "Ustanem, ali duša ostane u krevetu" },
+            { key: "d", text: "Ne ustajem, samo se teleportujem kroz dan" }
+          ]
+        },
+        {
+          text: "Šta najčešće kažeš cimerki?",
+          answers: [
+            { key: "a", text: "“Hoćeš čaj" },
+            { key: "b", text: "“Imam trač.”" },
+            { key: "c", text: "“Samo da ti ispričam šta mi se desilo...“" },
+            { key: "d", text: "“Ne mogu sad“" }            ]
+        },
+        {
+          text: "Kako biraš outfit?",
+          answers: [
+            { key: "a", text: "Unapred znam šta oblačim" },
+            { key: "b", text: "Probam 7 kombinacija" },
+            { key: "c", text: "Prvo šta je čisto" },
+            { key: "d", text: "Trenerka uvek" }
+          ]
+        },
+        {
+          text: "Šta radiš kad ti je dosadno?",
+          answers: [
+            { key: "a", text: "Gledam Friends" },
+            { key: "b", text: "Zovem nekoga da pričamo" },
+            { key: "c", text: "Tražim nešto slatko" },
+            { key: "d", text: "Počnem da planiram putovanje koje se možda nikad neće desiti" }
+          ]
+        },
+        {
+          text: "Kako pakuješ kofer?",
+          answers: [
+            { key: "a", text: "Spisak + sve složeno" },
+            { key: "b", text: "Ubacim pola ormara “za svaki slučaj”" },
+            { key: "c", text: "Ne znam šta sam ponela dok ne stignem" },
+            { key: "d", text: "Pakujem se u panici i zaboravim nešto" }
+          ]
+        } ,
+        {
+          text: "Šta radiš kad si pod stresom?",
+          answers: [
+            { key: "a", text: "Napravim listu obaveza" },
+            { key: "b", text: "Zovem nekoga da se izjadam" },
+            { key: "c", text: "Jedem nešto slatko" },
+            { key: "d", text: "Pravim paniku pa se posle smejem" }
+          ]
+        },
+        {
+          text: "Koji si lik u grupnom chatu?",
+          answers: [
+            { key: "a", text: "Organizator" },
+            { key: "b", text: "Onaj koji šalje glasovne od 3 minuta" },
+            { key: "c", text: "Onaj koji šalje: gde jedemo?" },
+            { key: "d", text: "Onaj koji odgovori posle 2 dana kao da ništa nije bilo" }
+          ]
+        },
+        {
+          text: "Koji ti je životni moto?",
+          answers: [
+            { key: "a", text: "Plan spašava sve" },
+            { key: "b", text: "To je problem za mene sutra" },
+            { key: "c", text: "Prvo hrana, onda problemi" },
+            { key: "d", text: "Biće kako bude" }
+          ]
+        }, {
+          text: "Šta bi najradije radila u nedelju?",
+          answers: [
+            { key: "a", text: "Sredila sobu i pripremila se za nedelju" },
+            { key: "b", text: "Otišla na dugu kafu" },
+            { key: "c", text: "Gledala Friends i jela nešto lepo" },
+            { key: "d", text: "Ucila" }
+          ]
+        }
+        /*
+        KAKO DA DODAŠ JOŠ PITANJA:
+
+        Dodaj zarez posle prethodnog pitanja, pa ubaci novo:
+
+        ,
+        {
+          text: "Tvoje novo pitanje?",
+          answers: [
+            { key: "a", text: "Odgovor A" },
+            { key: "b", text: "Odgovor B" },
+            { key: "c", text: "Odgovor C" }
+          ]
+        }
+
+        Ako dodaš 4 pitanja, kombinacija u comboResults mora imati 4 slova, npr:
+        "a-b-c-a": "renaissance"
+        */
+      ],
+
+      results: {
+        morningLana: {
+          title: "Morning Lana",
+          icon: "wb_sunny",
+          description: "Ti si Lana koja pokušava da ima život pod kontrolom. Ustaješ, praviš planove, piješ kafu ili čaj kao da će to rešiti sve probleme i ponašaš se kao da je danas baš taj dan kad ćeš biti produktivna. Poštujemo trud.",
+          factTitle: "Realnost",
+          fact: "Morning Lana traje tačno dok se ne desi prva mala neprijatnost u danu. Posle toga se aktivira neka druga Lana."
+        },
+
+        partyLana: {
+          title: "Party Lana",
+          icon: "celebration",
+          description: "Ti si Party Lana… bar teoretski. Kreator ovog sajta ovu verziju Lane još nije upoznao, tako da za sada radimo samo sa pretpostavkama.",
+          factTitle: "Fun fact",
+          fact: "Kažu da Party Lana postoji, ali dok je kreator sajta ne vidi uživo, ovaj rezultat ostaje naučno nepotvrđen. Žao mi je "
+        },
+
+        studyLana: {
+          title: "Study Lana",
+          icon: "school",
+          description: "Ti si Lana kad uči — organizovana, fokusirana i sa planom koji se ne dira. Kad ona odluči da nešto mora da završi, ništa je ne može skrenuti sa puta. Ne postoji “samo jedna pauza”, ne postoji “ajde posle”, postoji samo plan i izvršenje.",
+          factTitle: "Istina",
+          fact: "Study Lana ne uči haotično. Ona ima sistem, raspored i mentalnu tabelu prioriteta koju niko ne sme da poremeti."
+        },
+
+        friendsLana: {
+          title: "Lana dok gleda Friends",
+          icon: "tv",
+          description: "Ti si Lana u svom najmirnijem obliku. Svet može da gori, ali ako su Friends upaljeni, trenutno nema problema. ",
+          factTitle: "Fun fact",
+          fact: "Ova Lana ne gleda Friends. Ona se vraća kući. Epizoda može biti pogledana 200 puta, ali reakcija je i dalje kao prvi put."
+        },
+
+        travelLana: {
+          title: "Travel Lana",
+          icon: "flight_takeoff",
+          description: "Ti si Lana koja uvek negde ide, planira da ide ili mentalno već živi u nekom drugom gradu. Kofer možda nije savršeno spakovan, ali vibe je spreman za polazak.",
+          factTitle: "Packing style",
+          fact: "Travel Lana kaže da joj ne treba mnogo stvari, a onda spakuje opcije za svaku moguću verziju sebe na putovanju."
+        },
+
+        snackLana: {
+          title: "Snack Lana",
+          icon: "bakery_dining",
+          description: "Ti si Lana koja zna da se svaki problem lakše rešava kad ima nešto slatko, slano ili bar nešto da se gricne. ",
+          factTitle: "Realno",
+          fact: "Snack Lana ne otvara frižider zato što zna šta traži. Otvara ga zato što veruje u mogućnosti."
+        },
+
+        dramaLana: {
+          title: "Drama Lana",
+          icon: "theater_comedy",
+          description: "Ti si Lana koja od obične situacije napravi epizodu serije. Nije problem toliko veliki, ali način na koji ga prepričaš? ",
+          factTitle: "Važno obaveštenje",
+          fact: "Drama Lana ne preteruje. Ona samo dodaje produkcijsku vrednost realnosti."
+        },
+
+        notLana: {
+          title: "Nažalost, nisi dovoljno dobar da budeš Lana",
+          icon: "block",
+          description: "Trudio si se, kliktao si odgovore, možda si čak i mislio da imaš šanse... ali Lana standardi su ipak previsoki.",
+          factTitle: "Nije sramota",
+          fact: "Biti Lana je full-time posao: treba znati kad učiti, kad paničiti, kad gledati Friends, kad jesti nešto slatko i kad spakovati pola ormara za svaki slučaj. Ti si blizu... ali još nisi Lana material."
+        }
+      },
+
+      comboResults: {
+        "a-a-d-d-d-b-d-d-c-b": "notLana",
+        "a-a-d-d-d-b-d-d-c-d": "notLana",
+
+        "a-a-a-a-a-a-a-a-a-a": "morningLana",
+        "b-b-b-b-b-b-b-b-b-b": "partyLana",
+        "c-c-c-c-c-c-c-c-c-c": "friendsLana",
+        "d-d-d-d-d-d-d-d-d-d": "studyLana",
+
+        "a-a-a-b-a-a-d-a-a-b": "morningLana",
+        "a-b-a-a-c-a-a-b-a-a": "morningLana",
+
+        "b-b-b-d-b-b-b-b-b-d": "partyLana",
+        "b-d-b-b-b-c-b-b-d-b": "partyLana",
+
+        "d-d-c-d-d-a-d-d-c-d": "studyLana",
+        "d-a-d-d-d-d-c-d-d-d": "studyLana",
+
+        "c-c-c-c-c-c-c-c-c-c": "friendsLana",
+        "c-c-c-a-c-c-c-c-b-c": "friendsLana",
+
+        "a-b-d-d-a-d-d-a-d-d": "travelLana",
+        "b-a-d-c-d-d-a-d-d-b": "travelLana",
+
+        "c-c-c-c-c-b-c-c-c-b": "snackLana",
+        "c-b-c-c-c-c-c-d-c-c": "snackLana",
+
+        "d-b-d-d-b-c-d-d-d-b": "dramaLana",
+        "b-b-d-d-d-b-d-c-d-d": "dramaLana"
+      },
+
+      fallbackByMostPicked: {
+        a: "morningLana",
+        b: "partyLana",
+        c: "friendsLana",
+        d: "studyLana"
+      }    };
+
+    let currentQuestionIndex = 0;
+    let userAnswers = [];
+
+    const startScreen = document.getElementById("startScreen");
+    const questionScreen = document.getElementById("questionScreen");
+    const resultScreen = document.getElementById("resultScreen");
+
+    const startBtn = document.getElementById("startBtn");
+    const nextBtn = document.getElementById("nextBtn");
+    const backBtn = document.getElementById("backBtn");
+    const restartBtn = document.getElementById("restartBtn");
+    const restartTopBtn = document.getElementById("restartTopBtn");
+
+    const startTitle = document.getElementById("startTitle");
+    const startDescription = document.getElementById("startDescription");
+    const quizMeta = document.getElementById("quizMeta");
+
+    const questionCounter = document.getElementById("questionCounter");
+    const progressPercent = document.getElementById("progressPercent");
+    const progressBar = document.getElementById("progressBar");
+    const questionText = document.getElementById("questionText");
+    const answersContainer = document.getElementById("answersContainer");
+    const nextBtnText = document.getElementById("nextBtnText");
+
+    const resultIcon = document.getElementById("resultIcon");
+    const resultTitle = document.getElementById("resultTitle");
+    const resultDescription = document.getElementById("resultDescription");
+    const resultFactTitle = document.getElementById("resultFactTitle");
+    const resultFact = document.getElementById("resultFact");
+
+    function showScreen(screenName) {
+      startScreen.classList.add("hidden");
+      questionScreen.classList.add("hidden");
+      resultScreen.classList.add("hidden");
+
+      if (screenName === "start") startScreen.classList.remove("hidden");
+      if (screenName === "question") questionScreen.classList.remove("hidden");
+      if (screenName === "result") resultScreen.classList.remove("hidden");
+    }
+
+    function loadStartScreen() {
+      startTitle.textContent = quizData.title;
+      startDescription.textContent = quizData.description;
+      quizMeta.textContent = quizData.meta;
+    }
+
+    function startQuiz() {
+      currentQuestionIndex = 0;
+      userAnswers = [];
+      showScreen("question");
+      renderQuestion();
+    }
+
+    function renderQuestion() {
+      const question = quizData.questions[currentQuestionIndex];
+      const totalQuestions = quizData.questions.length;
+      const progress = Math.round(((currentQuestionIndex + 1) / totalQuestions) * 100);
+
+      questionCounter.textContent = `Question ${currentQuestionIndex + 1} / ${totalQuestions}`;
+      progressPercent.textContent = `${progress}%`;
+      progressBar.style.width = `${progress}%`;
+      questionText.textContent = question.text;
+
+      answersContainer.innerHTML = "";
+
+      question.answers.forEach((answer) => {
+        const isSelected = userAnswers[currentQuestionIndex] === answer.key;
+
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `
+          answer-card w-full flex items-center gap-4 text-left p-5 rounded-xl border-2
+          ${isSelected ? "border-primary bg-surface-container-low" : "border-surface-container-highest bg-surface-container-lowest"}
+        `;
+
+        button.innerHTML = `
+          <span class="w-10 h-10 rounded-full flex items-center justify-center font-bold uppercase shrink-0
+            ${isSelected ? "bg-primary-container text-on-primary-container" : "bg-surface-container-high text-primary"}">
+            ${answer.key}
+          </span>
+          <span class="text-body-md text-on-surface">${answer.text}</span>
+        `;
+
+        button.addEventListener("click", () => selectAnswer(answer.key));
+        answersContainer.appendChild(button);
+      });
+
+      backBtn.disabled = currentQuestionIndex === 0;
+      backBtn.classList.toggle("opacity-50", currentQuestionIndex === 0);
+      backBtn.classList.toggle("cursor-not-allowed", currentQuestionIndex === 0);
+
+      nextBtnText.textContent = currentQuestionIndex === totalQuestions - 1 ? "See Result" : "Next Question";
+      updateNextButton();
+    }
+
+    function selectAnswer(answerKey) {
+      userAnswers[currentQuestionIndex] = answerKey;
+      renderQuestion();
+    }
+
+    function updateNextButton() {
+      const hasAnswer = Boolean(userAnswers[currentQuestionIndex]);
+
+      nextBtn.disabled = !hasAnswer;
+      nextBtn.classList.toggle("opacity-50", !hasAnswer);
+      nextBtn.classList.toggle("cursor-not-allowed", !hasAnswer);
+      nextBtn.classList.toggle("hover:bg-primary/90", hasAnswer);
+    }
+
+    function goNext() {
+      if (!userAnswers[currentQuestionIndex]) return;
+
+      if (currentQuestionIndex < quizData.questions.length - 1) {
+        currentQuestionIndex++;
+        renderQuestion();
+      } else {
+        showResult();
+      }
+    }
+
+    function goBack() {
+      if (currentQuestionIndex > 0) {
+        currentQuestionIndex--;
+        renderQuestion();
+      }
+    }
+
+    function getMostPickedAnswer() {
+      const counts = {};
+
+      userAnswers.forEach((answer) => {
+        counts[answer] = (counts[answer] || 0) + 1;
+      });
+
+      return Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0];
+    }
+
+    function findResultKey() {
+      const combination = userAnswers.join("-");
+
+      if (quizData.comboResults[combination]) {
+        return quizData.comboResults[combination];
+      }
+
+      const mostPicked = getMostPickedAnswer();
+      return quizData.fallbackByMostPicked[mostPicked];
+    }
+
+    function showResult() {
+      const resultKey = findResultKey();
+      const result = quizData.results[resultKey];
+
+      resultIcon.textContent = result.icon;
+      resultTitle.textContent = result.title;
+      resultDescription.textContent = result.description;
+      resultFactTitle.textContent = result.factTitle;
+      resultFact.textContent = result.fact;
+
+      showScreen("result");
+      createSparkle();
+    }
+
+    function restartQuiz() {
+      currentQuestionIndex = 0;
+      userAnswers = [];
+      showScreen("start");
+    }
+
+    function createSparkle() {
+      const colors = ["#ab3500", "#ff6b35", "#785a00", "#edc157"];
+
+      for (let i = 0; i < 15; i++) {
+        setTimeout(() => {
+          const sparkle = document.createElement("div");
+          sparkle.className = "celebration-sparkle material-symbols-outlined";
+          sparkle.innerText = "auto_awesome";
+          sparkle.style.color = colors[Math.floor(Math.random() * colors.length)];
+          sparkle.style.left = Math.random() * 100 + "vw";
+          sparkle.style.top = Math.random() * 100 + "vh";
+          sparkle.style.fontSize = Math.random() * 20 + 10 + "px";
+          document.body.appendChild(sparkle);
+
+          setTimeout(() => sparkle.remove(), 1000);
+        }, i * 150);
+      }
+    }
+
+    document.addEventListener("mousemove", function (e) {
+      const blobs = document.querySelectorAll(".animated-blob");
+      const x = (window.innerWidth - e.pageX * 2) / 100;
+      const y = (window.innerHeight - e.pageY * 2) / 100;
+
+      blobs.forEach(function (blob, index) {
+        const shift = (index + 1) * 2;
+        blob.style.transform = `translate(${x * shift}px, ${y * shift}px)`;
+      });
+    });
+
+    startBtn.addEventListener("click", startQuiz);
+    nextBtn.addEventListener("click", goNext);
+    backBtn.addEventListener("click", goBack);
+    restartBtn.addEventListener("click", restartQuiz);
+    restartTopBtn.addEventListener("click", restartQuiz);
+
+    loadStartScreen();
+  </script>
+</body>
+</html>
